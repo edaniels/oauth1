@@ -61,6 +61,16 @@ func NewClient(ctx context.Context, config *Config, token *Token) *http.Client {
 // (temporary credentials).
 // See RFC 5849 2.1 Temporary Credentials.
 func (c *Config) RequestToken() (requestToken, requestSecret string, err error) {
+	return c.RequestTokenContext(context.Background())
+}
+
+// RequestTokenContext obtains a Request token and secret (temporary credential) by
+// POSTing a request (with oauth_callback in the auth header) to the Endpoint
+// RequestTokenURL. The response body form is validated to ensure
+// oauth_callback_confirmed is true. Returns the request token and secret
+// (temporary credentials).
+// See RFC 5849 2.1 Temporary Credentials.
+func (c *Config) RequestTokenContext(ctx context.Context) (requestToken, requestSecret string, err error) {
 	req, err := http.NewRequest("POST", c.Endpoint.RequestTokenURL, nil)
 	if err != nil {
 		return "", "", err
@@ -69,7 +79,7 @@ func (c *Config) RequestToken() (requestToken, requestSecret string, err error) 
 	if err != nil {
 		return "", "", err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {
 		return "", "", err
 	}
@@ -138,6 +148,15 @@ func ParseAuthorizationCallback(req *http.Request) (requestToken, verifier strin
 // credentials).
 // See RFC 5849 2.3 Token Credentials.
 func (c *Config) AccessToken(requestToken, requestSecret, verifier string) (accessToken, accessSecret string, err error) {
+	return c.AccessTokenContext(context.Background(), requestToken, requestSecret, verifier)
+}
+
+// AccessTokenContext obtains an access token (token credential) by POSTing a
+// request (with oauth_token and oauth_verifier in the auth header) to the
+// Endpoint AccessTokenURL. Returns the access token and secret (token
+// credentials).
+// See RFC 5849 2.3 Token Credentials.
+func (c *Config) AccessTokenContext(ctx context.Context, requestToken, requestSecret, verifier string) (accessToken, accessSecret string, err error) {
 	req, err := http.NewRequest("POST", c.Endpoint.AccessTokenURL, nil)
 	if err != nil {
 		return "", "", err
@@ -146,7 +165,7 @@ func (c *Config) AccessToken(requestToken, requestSecret, verifier string) (acce
 	if err != nil {
 		return "", "", err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {
 		return "", "", err
 	}
